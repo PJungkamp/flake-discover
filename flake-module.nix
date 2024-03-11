@@ -77,7 +77,9 @@ in {
       enable,
       dir,
     }:
-      mkIf enable (forDirEntries dir nixFileStem doImport);
+      if enable # mkIf leads to errors
+      then forDirEntries dir nixFileStem doImport
+      else {};
   in
     genAttrs flakeAttrs (attr: mkFlakeAttr cfg.${attr});
 }

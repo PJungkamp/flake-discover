@@ -7,12 +7,15 @@
       url = "github:PJungkamp/flake-discover";
       inputs.flake-parts.follows = "flake-parts";
       inputs.nixpkgs.follows = "nixpkgs";
-    }
+    };
   };
 
-  outputs = inputs @ { self, ... }:
+  outputs = inputs @ { self, flake-parts, flake-discover, ... }:
     flake-parts.lib.mkFlake {inherit inputs;} {
+      # import the flake-discover module
       imports = [flake-discover.flakeModules.default];
+
+      # list of supported systems
       systems = ["x86_64-linux"];
 
       # the root directory for the auto-discover default directories
