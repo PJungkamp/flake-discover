@@ -27,8 +27,8 @@
         inherit flakeModules lib;
 
         templates.default = {
-          path = ./templates/default;
-          description = "";
+          path = ./template;
+          description = "A simple flake showing the basic options of flake-discover";
         };
       };
     });
