@@ -16,7 +16,6 @@
     self,
     flake-parts,
     nixpkgs-lib,
-    nixpkgs,
   }:
     flake-parts.lib.mkFlake {inherit inputs;} ({flake-parts-lib, ...}: let
       inherit (flake-parts-lib) importApply;
@@ -31,24 +30,7 @@
         flake-discover-lib = lib;
       };
     in {
-      systems = ["x86_64-linux"];
-
-      # "dogfood" the module
-      imports = [flakeModules.default];
-
-      # discover outputs relative to the flake root
-      discover.root = ./.;
-
-      perSystem = {
-        pkgs,
-        self,
-        ...
-      }: {
-        # discover packages in ./packages
-        discover.packages.enable = true;
-
-        formatter = pkgs.alejandra;
-      };
+      systems = [];
 
       flake = {
         inherit flakeModules lib;
