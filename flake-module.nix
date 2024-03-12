@@ -47,6 +47,7 @@ toplevel @ {
       // toplevel.config.discover.args
       // {
         inherit (perSystem) pkgs system self' inputs';
+        inherit specialArgs;
       };
   });
 in {
