@@ -29,10 +29,6 @@
     "packages"
   ];
 
-  toplevelSpecialArgs = {
-    inherit (flake) self inputs lib withSystem getSystem moduleWithSystem;
-  };
-
   root = config.discover.root;
 
   perSystemOptions = mkPerSystemOption (perSystem @ {
@@ -54,10 +50,6 @@
 
     config = let
       cfg = config.discover;
-
-      perSystemSpecialArgs = {
-        inherit (perSystem) pkgs system self' inputs';
-      };
 
       doImport = name: path: import path ({
         inherit (flake) self inputs lib withSystem getSystem moduleWithSystem;
