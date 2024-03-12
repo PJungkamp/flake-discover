@@ -1,4 +1,4 @@
-{flake-discover-lib}: flake @ {
+toplevel @ {
   config,
   flake-parts-lib,
   inputs,
@@ -10,24 +10,7 @@
   ...
 }: let
   inherit (flake-parts-lib) mkPerSystemOption;
-  inherit (flake-discover-lib) mkDiscoverOption forDirEntries nixFileStem dirEntries;
-  inherit (lib.attrsets) genAttrs mapAttrs filterAttrs getAttrs;
-  inherit (lib) types mkIf;
-  inherit (lib.options) mkOption;
-
-  flakeAttrs = [
-    "homeConfigurations"
-    "homeModules"
-    "nixosConfigurations"
-    "nixosModules"
-    "overlays"
-  ];
-
-  perSystemAttrs = [
-    "checks"
-    "devShells"
-    "packages"
-  ];
+  inherit (lib) types mkOption;
 
   root = config.discover.root;
 
@@ -39,65 +22,60 @@
     system,
     ...
   }: {
-    options.discover =
-      (genAttrs perSystemAttrs (mkDiscoverOption root))
-      // {
-        extraArgs = mkOption {
-          type = with types; lazyAttrsOf raw;
-          default = {};
-        };
+    options.discover = {
+      root = mkOption {
+        internal = true;
+        type = types.path;
+        default = toplevel.config.discover.root;
       };
 
-    config = let
-      cfg = config.discover;
+      args = mkOption {
+        internal = true;
+        type = with types; lazyAttrsOf unspecified;
+      };
 
-      doImport = name: path: import path ({
-        inherit (flake) self inputs lib withSystem getSystem moduleWithSystem;
-        inherit (perSystem) pkgs system self' inputs';
-      } // cfg.extraArgs);
+      specialArgs = mkOption {
+        type = with types; lazyAttrsOf unspecified;
+        default = {};
+      };
+    };
 
-      mkPerSystemAttr = {
-        enable,
-        dir,
-      }:
-        if enable
-        then forDirEntries dir nixFileStem doImport
-        else {};
+    config.discover.args = let
+      specialArgs = config.discover.specialArgs;
     in
-      genAttrs perSystemAttrs (attr: mkPerSystemAttr cfg.${attr});
+      specialArgs
+      // toplevel.config.discover.args
+      // {
+        inherit (perSystem) pkgs system self' inputs';
+      };
   });
 in {
   options = {
-    discover =
-      (genAttrs flakeAttrs (mkDiscoverOption root))
-      // {
-        root = mkOption {
-          type = types.path;
-        };
-
-        extraArgs = mkOption {
-          type = with types; lazyAttrsOf raw;
-          default = {};
-        };
+    discover = {
+      root = mkOption {
+        type = types.path;
       };
+
+      args = mkOption {
+        internal = true;
+        type = with types; lazyAttrsOf unspecified;
+      };
+
+      specialArgs = mkOption {
+        type = with types; lazyAttrsOf unspecified;
+        default = {};
+      };
+    };
 
     perSystem = perSystemOptions;
   };
 
-  config.flake = let
-    cfg = config.discover;
-
-    doImport = name: path: import path ({
-      inherit (flake) self inputs lib withSystem getSystem moduleWithSystem;
-    } // cfg.extraArgs);
-
-    mkFlakeAttr = {
-      enable,
-      dir,
-    }:
-      if enable
-      then forDirEntries dir nixFileStem doImport
-      else {};
+  config.discover.args = let
+    specialArgs = config.discover.specialArgs;
   in
-    genAttrs flakeAttrs (attr: mkFlakeAttr cfg.${attr});
+    specialArgs
+    // {
+      inherit (toplevel) self inputs lib withSystem getSystem moduleWithSystem;
+      inherit specialArgs;
+    };
 }

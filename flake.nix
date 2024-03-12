@@ -18,24 +18,77 @@
     nixpkgs-lib,
   }:
     flake-parts.lib.mkFlake {inherit inputs;} ({flake-parts-lib, ...}: let
-      inherit (flake-parts-lib) importApply;
 
       # the library for other flakes wanting to provide a discover option
       lib = import ./lib.nix {
         inherit (nixpkgs-lib) lib;
+        inherit flake-parts-lib;
       };
 
-      # importApply allows us to "dogfood" the module within this flake
-      flakeModules.default = importApply ./flake-module.nix {
-        flake-discover-lib = lib;
+      modules = {
+        base = import ./flake-module.nix;
+
+        overlays = lib.mkDiscoverModule {
+          name = "overlays";
+          path = ["flake"];
+        };
+
+        nixosModules = lib.mkDiscoverModule {
+          name = "nixosModules";
+          path = ["flake"];
+        };
+
+        nixosConfigurations = lib.mkDiscoverModule {
+          name = "nixosConfigurations";
+          path = ["flake"];
+        };
+
+        homeModules = lib.mkDiscoverModule {
+          name = "homeModules";
+          path = ["flake"];
+        };
+
+        homeConfigurations = lib.mkDiscoverModule {
+          name = "homeConfigurations";
+          path = ["flake"];
+        };
+
+        templates = lib.mkDiscoverModule {
+          name = "templates";
+          path = ["flake"];
+        };
+
+        recipes = lib.mkDiscoverModule {
+          name = "recipes";
+          path = ["flake"];
+        };
+
+        packages = lib.mkPerSystemDiscoverModule {
+          name = "packages";
+        };
+
+        devShells = lib.mkPerSystemDiscoverModule {
+          name = "devShells";
+        };
+
+        checks = lib.mkPerSystemDiscoverModule {
+          name = "checks";
+        };
+
+        apps = lib.mkPerSystemDiscoverModule {
+          name = "apps";
+        };
       };
     in {
       systems = [];
 
       flake = {
-        inherit flakeModules lib;
+        inherit lib;
 
-        # provide a template for consuming flakes.
+        flakeModules = modules // {
+          default.imports = builtins.attrValues modules;
+        };
+
         templates.default = {
           path = ./template;
           description = "A simple flake showing the basic options of flake-discover";

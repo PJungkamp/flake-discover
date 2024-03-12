@@ -1,8 +1,13 @@
-{lib}: let
+{
+  lib,
+  flake-parts-lib,
+  ...
+}: let
   inherit (builtins) readDir split elemAt length pathExists;
-  inherit (lib) types;
+  inherit (lib) types mkIf;
   inherit (lib.options) mkOption mkEnableOption;
-  inherit (lib.attrsets) mapAttrs concatMapAttrs;
+  inherit (lib.attrsets) mapAttrs concatMapAttrs setAttrByPath;
+  inherit (flake-parts-lib) mkPerSystemOption;
 in rec {
   dirEntries = path: let
     toPath = n: v: path + "/${n}";
@@ -32,15 +37,42 @@ in rec {
   in
     assert ext != null -> ext == "nix"; stem;
 
-  mkDiscoverOption = root: attr: {
-    enable = mkEnableOption "auto discovery of ${attr}";
+  mkDiscoverModule = {
+    name,
+    path ? [],
+  }: {config, ...}: let
+    cfg = config.discover;
+    target = path ++ [name];
+  in {
+    options.discover.${name} = mkOption {
+      type = types.submodule {
+        options = {
+          enable = mkEnableOption "auto discovery of ${name}";
 
-    dir = mkOption {
-      type = types.path;
-      default = root + "/${attr}";
-      description = ''
-        directory in which ${attr} are discovered.
-      '';
+          dir = mkOption {
+            type = types.path;
+            default = cfg.root + "/${name}";
+            defaultText = ''
+              config.discover.root + "/${name}"
+            '';
+            description = ''
+              directory in which ${name} are discovered.
+            '';
+          };
+        };
+      };
+      default = {};
     };
+
+    config = mkIf cfg.${name}.enable (setAttrByPath target (
+      forDirEntries
+      cfg.${name}.dir
+      nixFileStem
+      (name: path: import path cfg.args)
+    ));
+  };
+
+  mkPerSystemDiscoverModule = args: {
+    options.perSystem = mkPerSystemOption (mkDiscoverModule args);
   };
 }
