@@ -1,4 +1,4 @@
-{flake-discover-lib}: {
+{flake-discover-lib}: module @ {
   lib,
   self,
   flake-parts-lib,
@@ -27,7 +27,7 @@
 
   root = config.discover.root;
 
-  perSystemOptions = mkPerSystemOption ({
+  perSystemOptions = mkPerSystemOption (perSystem @ {
     config,
     pkgs,
     ...
@@ -35,7 +35,7 @@
     options.discover =
       (genAttrs perSystemAttrs (mkDiscoverOption root))
       // {
-        args = mkOption {
+        extraArgs = mkOption {
           type = with types; lazyAttrsOf raw;
           default = {};
         };
@@ -43,12 +43,14 @@
 
     config = let
       cfg = config.discover;
-      doCallPackage = name: path: pkgs.callPackage path cfg.args;
+      doImport = name: path: import path (perSystem // cfg.extraArgs);
       mkPerSystemAttr = {
         enable,
         dir,
       }:
-        mkIf enable (forDirEntries dir nixFileStem doCallPackage);
+        if enable
+        then forDirEntries dir nixFileStem doImport
+        else {};
     in
       genAttrs perSystemAttrs (attr: mkPerSystemAttr cfg.${attr});
   });
@@ -61,7 +63,7 @@ in {
           type = types.path;
         };
 
-        args = mkOption {
+        extraArgs = mkOption {
           type = with types; lazyAttrsOf raw;
           default = {};
         };
@@ -72,12 +74,12 @@ in {
 
   config.flake = let
     cfg = config.discover;
-    doImport = name: path: import path cfg.args;
+    doImport = name: path: import path (module // cfg.extraArgs);
     mkFlakeAttr = {
       enable,
       dir,
     }:
-      if enable # mkIf leads to errors
+      if enable
       then forDirEntries dir nixFileStem doImport
       else {};
   in

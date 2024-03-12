@@ -1,3 +1,3 @@
-final: prev: {
+flake: final: prev: {
   hello = prev.hello;
 }

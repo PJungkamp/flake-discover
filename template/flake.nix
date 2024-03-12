@@ -10,7 +10,12 @@
     };
   };
 
-  outputs = inputs @ { self, flake-parts, flake-discover, ... }:
+  outputs = inputs @ {
+    self,
+    flake-parts,
+    flake-discover,
+    ...
+  }:
     flake-parts.lib.mkFlake {inherit inputs;} {
       # import the flake-discover module
       imports = [flake-discover.flakeModules.default];
