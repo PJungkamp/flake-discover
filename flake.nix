@@ -39,7 +39,11 @@
       # discover outputs relative to the flake root
       discover.root = ./.;
 
-      perSystem = {pkgs, ...}: {
+      perSystem = {
+        pkgs,
+        self,
+        ...
+      }: {
         # discover packages in ./packages
         discover.packages.enable = true;
 

@@ -1,8 +1,12 @@
-{flake-discover-lib}: module @ {
+{flake-discover-lib}: flake @ {
+  config,
+  flake-parts-lib,
+  inputs,
   lib,
   self,
-  flake-parts-lib,
-  config,
+  withSystem,
+  getSystem,
+  moduleWithSystem,
   ...
 }: let
   inherit (flake-parts-lib) mkPerSystemOption;
@@ -25,11 +29,18 @@
     "packages"
   ];
 
+  toplevelSpecialArgs = {
+    inherit (flake) self inputs lib withSystem getSystem moduleWithSystem;
+  };
+
   root = config.discover.root;
 
   perSystemOptions = mkPerSystemOption (perSystem @ {
     config,
+    inputs',
     pkgs,
+    self',
+    system,
     ...
   }: {
     options.discover =
@@ -43,7 +54,16 @@
 
     config = let
       cfg = config.discover;
-      doImport = name: path: import path (perSystem // cfg.extraArgs);
+
+      perSystemSpecialArgs = {
+        inherit (perSystem) pkgs system self' inputs';
+      };
+
+      doImport = name: path: import path ({
+        inherit (flake) self inputs lib withSystem getSystem moduleWithSystem;
+        inherit (perSystem) pkgs system self' inputs';
+      } // cfg.extraArgs);
+
       mkPerSystemAttr = {
         enable,
         dir,
@@ -74,7 +94,11 @@ in {
 
   config.flake = let
     cfg = config.discover;
-    doImport = name: path: import path (module // cfg.extraArgs);
+
+    doImport = name: path: import path ({
+      inherit (flake) self inputs lib withSystem getSystem moduleWithSystem;
+    } // cfg.extraArgs);
+
     mkFlakeAttr = {
       enable,
       dir,
